@@ -1,9 +1,14 @@
+import { Poppins } from 'next/font/google';
 import './globals.css';
-import { Inter } from 'next/font/google';
 import { AuthProvider } from './providers';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 
-const inter = Inter({ subsets: ['latin'] });
+const poppins = Poppins({
+  weight: ['400', '500', '600', '700'],
+  subsets: ['latin'],
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'Live Polling Platform',
@@ -12,12 +17,15 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className={poppins.className}>
+      <body className="bg-[#0f172a] text-white">
         <AuthProvider>
-          <div className="min-h-screen bg-gray-50">
+          <div className="flex flex-col min-h-screen">
             <Navbar />
-            <main className="container mx-auto px-4 py-8">{children}</main>
+            <main className="flex-grow pt-16 pb-14"> {/* Add padding to account for fixed header/footer */}
+              {children}
+            </main>
+            <Footer />
           </div>
         </AuthProvider>
       </body>

@@ -6,9 +6,13 @@
 /* Optional custom global styles */
 body {
   @apply bg-gray-50;
+  font-family: 'Poppins', sans-serif;
 }
 
 /* Custom classes or overrides */
 .my-custom-class {
   @apply text-blue-500;
+  font-family: 'Poppins', sans-serif;
+
+  
 }
