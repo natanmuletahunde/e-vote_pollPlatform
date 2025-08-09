@@ -1,6 +1,6 @@
 'use client';
 import { useSession } from 'next-auth/react';
-import PollCard from '@/components/PollCard';
+import PollCard from '../components/PollCard';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 

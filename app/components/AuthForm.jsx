@@ -16,20 +16,22 @@ export default function AuthForm({ isLogin = true }) {
     setIsLoading(true);
     setError('');
 
-    if (isLogin) {
-      const result = await signIn('credentials', {
-        redirect: false,
-        email,
-        password,
-      });
+    try {
+      if (isLogin) {
+        // Handle login
+        const result = await signIn('credentials', {
+          redirect: false,
+          email,
+          password,
+        });
 
-      if (result?.error) {
-        setError(result.error);
-      } else {
+        if (result?.error) {
+          throw new Error(result.error);
+        }
+
         router.push('/dashboard');
-      }
-    } else {
-      try {
+      } else {
+        // Handle registration
         const response = await fetch('/api/auth/register', {
           method: 'POST',
           headers: {
@@ -38,29 +40,30 @@ export default function AuthForm({ isLogin = true }) {
           body: JSON.stringify({ email, password, name }),
         });
 
+        const data = await response.json();
+
         if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Registration failed');
+          throw new Error(data.error || 'Registration failed. Please try again.');
         }
 
-        // Auto-login after registration
-        const result = await signIn('credentials', {
+        // Auto-login after successful registration
+        const loginResult = await signIn('credentials', {
           redirect: false,
           email,
           password,
         });
 
-        if (result?.error) {
-          setError(result.error);
-        } else {
-          router.push('/dashboard');
+        if (loginResult?.error) {
+          throw new Error(loginResult.error);
         }
-      } catch (err) {
-        setError(err.message);
-      }
-    }
 
-    setIsLoading(false);
+        router.push('/dashboard');
+      }
+    } catch (err) {
+      setError(err.message || 'An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -70,7 +73,7 @@ export default function AuthForm({ isLogin = true }) {
       </h2>
       
       {error && (
-        <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+        <div className="mb-4 p-2 bg-red-100 text-red-700 rounded text-sm">
           {error}
         </div>
       )}
@@ -78,36 +81,39 @@ export default function AuthForm({ isLogin = true }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         {!isLogin && (
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              Name
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              Full Name
             </label>
             <input
               id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
+              minLength={3}
+              placeholder="John Doe"
             />
           </div>
         )}
         
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            Email Address
           </label>
           <input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
+            placeholder="you@example.com"
           />
         </div>
         
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
             Password
           </label>
           <input
@@ -115,34 +121,50 @@ export default function AuthForm({ isLogin = true }) {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
-            minLength="6"
+            minLength={6}
+            placeholder="••••••••"
           />
+          {!isLogin && (
+            <p className="mt-1 text-xs text-gray-500">
+              Password must be at least 6 characters
+            </p>
+          )}
         </div>
         
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+          className={`w-full py-2 px-4 rounded-md text-white font-medium ${
+            isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+          } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
         >
-          {isLoading ? 'Processing...' : isLogin ? 'Login' : 'Register'}
+          {isLoading ? (
+            <span className="flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Processing...
+            </span>
+          ) : isLogin ? 'Sign In' : 'Create Account'}
         </button>
       </form>
       
-      <div className="mt-4 text-center">
+      <div className="mt-4 text-center text-sm text-gray-600">
         {isLogin ? (
           <p>
             Don't have an account?{' '}
-            <a href="/auth/register" className="text-primary hover:underline">
-              Register
+            <a href="/auth/register" className="font-medium text-blue-600 hover:text-blue-500">
+              Register here
             </a>
           </p>
         ) : (
           <p>
             Already have an account?{' '}
-            <a href="/auth/login" className="text-primary hover:underline">
-              Login
+            <a href="/auth/login" className="font-medium text-blue-600 hover:text-blue-500">
+              Sign in
             </a>
           </p>
         )}

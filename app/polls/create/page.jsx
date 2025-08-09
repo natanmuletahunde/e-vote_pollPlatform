@@ -1,6 +1,6 @@
 'use client';
 import { useSession } from 'next-auth/react';
-import PollForm from '@/components/PollForm';
+import PollForm from '../../components/PollForm';
 import { useRouter } from 'next/navigation';
 
 export default function CreatePollPage() {

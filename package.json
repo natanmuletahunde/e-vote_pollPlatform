@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "chart.js": "^4.5.0",
     "mongodb": "^6.18.0",
     "mongoose": "^8.17.1",
@@ -20,6 +21,7 @@
     "shadcn-ui": "^0.9.5"
   },
   "devDependencies": {
+    "@craco/craco": "^7.1.0",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "autoprefixer": "^10.4.21",

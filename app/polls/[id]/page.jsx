@@ -2,7 +2,7 @@
 import { useSession } from 'next-auth/react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import ResultsChart from '@/components/ResultsChart';
+import ResultsChart from '../../components/ResultsChart';
 
 export default function PollPage() {
   const { id } = useParams();

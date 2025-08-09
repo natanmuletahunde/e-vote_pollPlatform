@@ -1,4 +1,4 @@
-import PollCard from '@/components/PollCard';
+import PollCard from './components/PollCard';
 import { getPolls } from '@/lib/actions';
 
 export default async function Home() {
