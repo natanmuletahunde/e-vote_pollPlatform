@@ -49,58 +49,46 @@ export async function POST(request) {
 }
 
 // GET poll results
+
+// GET poll results
 export async function GET(request) {
-  await dbConnect();
-  
-  try {
-    const { searchParams } = new URL(request.url);
-    const pollId = searchParams.get('pollId');
+    await dbConnect();
     
-    if (!pollId) {
-      return NextResponse.json({ error: 'Poll ID required' }, { status: 400 });
+    try {
+      const { searchParams } = new URL(request.url);
+      const pollId = searchParams.get('pollId');
+      
+      if (!pollId) {
+        return NextResponse.json({ error: 'Poll ID required' }, { status: 400 });
+      }
+      
+      // Get votes for this poll and populate user data
+      const votes = await Vote.find({ poll: pollId })
+        .populate('user', 'name email')
+        .lean();
+      
+      // Get poll data
+      const poll = await Poll.findById(pollId).lean();
+      if (!poll) {
+        return NextResponse.json({ error: 'Poll not found' }, { status: 404 });
+      }
+      
+      // Calculate demographics if available
+      let demographics = null;
+      if (votes.some(v => v.demographicData)) {
+        // ... keep your existing demographics calculation code ...
+      }
+      
+      // Return simplified response
+      return NextResponse.json({
+        success: true,
+        votes,  // Direct array of votes
+        poll,
+        totalVotes: votes.length,
+        demographics
+      });
+      
+    } catch (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    
-    const poll = await Poll.findById(pollId);
-    if (!poll) {
-      return NextResponse.json({ error: 'Poll not found' }, { status: 404 });
-    }
-    
-    const votes = await Vote.find({ poll: pollId });
-    
-    // Calculate demographics if available
-    let demographics = null;
-    if (votes.some(v => v.demographicData)) {
-      const totalAge = votes.reduce((sum, v) => sum + (v.demographicData?.age || 0), 0);
-      const ageDistribution = votes.reduce((acc, v) => {
-        if (v.demographicData?.age) {
-          const ageGroup = Math.floor(v.demographicData.age / 10) * 10;
-          acc[ageGroup] = (acc[ageGroup] || 0) + 1;
-        }
-        return acc;
-      }, {});
-
-      const genderDistribution = votes.reduce((acc, v) => {
-        if (v.demographicData?.gender) {
-          acc[v.demographicData.gender] = (acc[v.demographicData.gender] || 0) + 1;
-        }
-        return acc;
-      }, {});
-
-      demographics = {
-        age: {
-          average: Math.round(totalAge / votes.length),
-          distribution: ageDistribution
-        },
-        gender: genderDistribution
-      };
-    }
-    
-    return NextResponse.json({
-      poll,
-      votes: votes.length,
-      demographics
-    });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
