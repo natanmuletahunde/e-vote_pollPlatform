@@ -70,23 +70,28 @@ export async function GET(request) {
     // Calculate demographics if available
     let demographics = null;
     if (votes.some(v => v.demographicData)) {
+      const totalAge = votes.reduce((sum, v) => sum + (v.demographicData?.age || 0), 0);
+      const ageDistribution = votes.reduce((acc, v) => {
+        if (v.demographicData?.age) {
+          const ageGroup = Math.floor(v.demographicData.age / 10) * 10;
+          acc[ageGroup] = (acc[ageGroup] || 0) + 1;
+        }
+        return acc;
+      }, {});
+
+      const genderDistribution = votes.reduce((acc, v) => {
+        if (v.demographicData?.gender) {
+          acc[v.demographicData.gender] = (acc[v.demographicData.gender] || 0) + 1;
+        }
+        return acc;
+      }, {});
+
       demographics = {
         age: {
-          average: Math.round(votes.reduce((sum, v) => sum + (v.demographicData?.age || 0), 0) / votes.length,
-          distribution: votes.reduce((acc, v) => {
-            if (v.demographicData?.age) {
-              const ageGroup = Math.floor(v.demographicData.age / 10) * 10;
-              acc[ageGroup] = (acc[ageGroup] || 0) + 1;
-            }
-            return acc;
-          }, {})
+          average: Math.round(totalAge / votes.length),
+          distribution: ageDistribution
         },
-        gender: votes.reduce((acc, v) => {
-          if (v.demographicData?.gender) {
-            acc[v.demographicData.gender] = (acc[v.demographicData.gender] || 0) + 1;
-          }
-          return acc;
-        }, {})
+        gender: genderDistribution
       };
     }
     
