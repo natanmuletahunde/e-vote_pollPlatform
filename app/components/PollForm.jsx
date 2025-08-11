@@ -35,21 +35,17 @@ export default function PollForm() {
     setIsSubmitting(true);
     setError('');
 
-    // Validate
-    if (!question.trim()) {
-      setError('Question is required');
-      setIsSubmitting(false);
-      return;
-    }
-
-    const validOptions = options.filter(opt => opt.trim());
-    if (validOptions.length < 2) {
-      setError('At least 2 options are required');
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
+      // Validate inputs
+      if (!question.trim()) {
+        throw new Error('Question is required');
+      }
+
+      const validOptions = options.filter(opt => opt.trim());
+      if (validOptions.length < 2) {
+        throw new Error('At least 2 options are required');
+      }
+
       const response = await fetch('/api/polls', {
         method: 'POST',
         headers: {
@@ -78,7 +74,7 @@ export default function PollForm() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
+    <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md text-gray-900">
       <h2 className="text-2xl font-bold mb-6">Create New Poll</h2>
       
       {error && (
@@ -89,7 +85,7 @@ export default function PollForm() {
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="question" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="question" className="block text-sm font-medium text-gray-900">
             Poll Question
           </label>
           <input
@@ -97,18 +93,18 @@ export default function PollForm() {
             type="text"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900"
             placeholder="What's your favorite color?"
             required
           />
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-900 mb-2">
             Poll Type
           </label>
           <div className="flex space-x-4">
-            <label className="inline-flex items-center">
+            <label className="inline-flex items-center text-gray-900">
               <input
                 type="radio"
                 className="form-radio text-primary"
@@ -119,7 +115,7 @@ export default function PollForm() {
               />
               <span className="ml-2">Multiple Choice</span>
             </label>
-            <label className="inline-flex items-center">
+            <label className="inline-flex items-center text-gray-900">
               <input
                 type="radio"
                 className="form-radio text-primary"
@@ -134,7 +130,7 @@ export default function PollForm() {
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-900 mb-2">
             Options
           </label>
           <div className="space-y-2">
@@ -144,7 +140,7 @@ export default function PollForm() {
                   type="text"
                   value={option}
                   onChange={(e) => handleOptionChange(index, e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900"
                   placeholder={`Option ${index + 1}`}
                   required={index < 2}
                 />
@@ -172,7 +168,7 @@ export default function PollForm() {
         </div>
         
         <div>
-          <label htmlFor="closesAt" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="closesAt" className="block text-sm font-medium text-gray-900">
             Close Date (optional)
           </label>
           <input
@@ -180,7 +176,7 @@ export default function PollForm() {
             type="datetime-local"
             value={closesAt}
             onChange={(e) => setClosesAt(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary text-gray-900"
           />
         </div>
         

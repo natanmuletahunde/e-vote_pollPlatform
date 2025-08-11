@@ -21,40 +21,49 @@ export default function PollPage() {
   useEffect(() => {
     const fetchPoll = async () => {
       try {
-        // Fetch specific poll directly
+        setLoading(true);
+        setError('');
+        
         const response = await fetch(`/api/polls/${id}`);
-        if (!response.ok) throw new Error('Failed to fetch poll');
-        
-        const poll = await response.json();
-        
-        if (!poll) {
-          throw new Error('Poll not found');
+        if (!response.ok) {
+          throw new Error('Failed to fetch poll');
         }
         
-        setPoll(poll);
+        const pollData = await response.json();
         
-        // Check if user has already voted
+        // Data should already be serialized from API, but we'll double-check
+        const finalPoll = {
+          ...pollData,
+          _id: String(pollData._id),
+          creator: {
+            ...pollData.creator,
+            _id: String(pollData.creator._id)
+          },
+          options: pollData.options.map(option => ({
+            ...option,
+            _id: String(option._id)
+          }))
+        };
+
+        setPoll(finalPoll);
+        
         if (status === 'authenticated') {
-          const voteCheck = await fetch(`/api/votes?pollId=${id}`);
+          const voteCheck = await fetch(`/api/votes/check?pollId=${id}&userId=${session.user.id}`);
           if (voteCheck.ok) {
             const voteData = await voteCheck.json();
-            // Handle both response formats
-            const votesArray = voteData.votes || voteData;
-            const userVoted = Array.isArray(votesArray) 
-              ? votesArray.some(v => v.user._id.toString() === session.user.id)
-              : false;
-            setHasVoted(userVoted);
+            setHasVoted(voteData.hasVoted);
           }
         }
       } catch (err) {
         setError(err.message);
+        setPoll(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchPoll();
-  }, [id, status, session]);
+  }, [id, status, session?.user?.id]);
 
   const handleVote = async () => {
     if (selectedOption === null) {
@@ -78,10 +87,9 @@ export default function PollPage() {
         }),
       });
 
-      const data = await response.json();
-      
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to submit vote');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to submit vote');
       }
 
       setHasVoted(true);
@@ -90,7 +98,19 @@ export default function PollPage() {
       // Refresh poll data
       const pollResponse = await fetch(`/api/polls/${id}`);
       const updatedPoll = await pollResponse.json();
-      setPoll(updatedPoll);
+      
+      setPoll({
+        ...updatedPoll,
+        _id: String(updatedPoll._id),
+        creator: {
+          ...updatedPoll.creator,
+          _id: String(updatedPoll.creator._id)
+        },
+        options: updatedPoll.options.map(option => ({
+          ...option,
+          _id: String(option._id)
+        }))
+      });
     } catch (err) {
       setError(err.message);
     }
@@ -108,10 +128,10 @@ export default function PollPage() {
       <div className="text-red-500 text-xl mb-4">Error</div>
       <p className="text-gray-700 mb-4">{error}</p>
       <button 
-        onClick={() => window.location.reload()}
+        onClick={() => router.push('/')}
         className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
       >
-        Try Again
+        Back to Home
       </button>
     </div>
   );
@@ -119,16 +139,19 @@ export default function PollPage() {
   if (!poll) return (
     <div className="text-center py-12">
       <p className="text-gray-600 mb-4">Poll not found</p>
-      <a href="/" className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark">
+      <button 
+        onClick={() => router.push('/')}
+        className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
+      >
         Back to Home
-      </a>
+      </button>
     </div>
   );
 
-  const isCreator = session?.user?.id === poll.creator._id.toString();
+  const isCreator = session?.user?.id === poll.creator._id;
 
   return (
-    <div className="py-8 max-w-4xl mx-auto">
+    <div className="py-8 max-w-4xl mx-auto px-4">
       <h1 className="text-3xl font-bold mb-2">{poll.question}</h1>
       <p className="text-gray-600 mb-6">
         Created by: {poll.creator.name} • {poll.isOpen ? 'Open' : 'Closed'}
@@ -148,7 +171,7 @@ export default function PollPage() {
           
           <div className="space-y-3 mb-6">
             {poll.options.map((option, index) => (
-              <div key={index} className="flex items-center">
+              <div key={option._id} className="flex items-center">
                 <input
                   type="radio"
                   id={`option-${index}`}

@@ -9,7 +9,9 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const [polls, setPolls] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // Static data
   const pollImages = [
     { src: 'https://www.slido.com/static/slido-live-polling-hero.828ea0d3.1600.jpg', alt: 'Slido polling interface' },
     { src: 'https://www.surveylegend.com/wordpress/wp-content/uploads/2018/07/10-live-survey-tools.png', alt: 'Survey tools comparison' },
@@ -40,35 +42,93 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      fetch('/api/polls')
-        .then(res => res.json())
-        .then(data => {
-          const userPolls = data.filter(poll => poll.creator._id === session.user.id);
+      const fetchPolls = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          const response = await fetch('/api/polls');
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch: ${response.status}`);
+          }
+
+          const result = await response.json();
+          
+          // Handle different API response formats
+          let pollsArray = [];
+          if (Array.isArray(result)) {
+            pollsArray = result;
+          } else if (result && Array.isArray(result.polls)) {
+            pollsArray = result.polls;
+          } else if (result && Array.isArray(result.data)) {
+            pollsArray = result.data;
+          } else {
+            throw new Error('API response is not a valid array');
+          }
+
+          // Filter polls for current user
+          const userPolls = pollsArray.filter(poll => 
+            poll?.creator?._id === session?.user?.id
+          );
           setPolls(userPolls);
+        } catch (err) {
+          console.error('Fetch error:', err);
+          setError(err.message);
+          setPolls([]);
+        } finally {
           setLoading(false);
-        })
-        .catch(err => {
-          console.error('Failed to fetch polls:', err);
-          setLoading(false);
-        });
+        }
+      };
+
+      fetchPolls();
     }
   }, [status, session]);
 
   if (status === 'loading' || loading) {
-    return <div className="text-center py-8">Loading...</div>;
+    return (
+      <div className="text-center py-8">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+        <p className="mt-2 text-gray-600">Loading dashboard...</p>
+      </div>
+    );
   }
 
   if (status === 'unauthenticated') {
-    return <div className="text-center py-8">Please login to view your dashboard</div>;
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-600">Please login to view your dashboard</p>
+        <Link 
+          href="/login" 
+          className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Login
+        </Link>
+      </div>
+    );
   }
+
+  const randomQuote = pollQuotes[Math.floor(Math.random() * pollQuotes.length)];
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-12">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <p className="font-bold">Error:</p>
+          <p>{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Polling History */}
       <div className="space-y-4">
         <h2 className="text-2xl font-bold">Polling Through History</h2>
         {pollHistory.map((item, index) => (
-          <div key={index} className="border-b border-gray-200 pb-4">
+          <div key={`history-${index}`} className="border-b border-gray-200 pb-4">
             <h3 className="font-bold">{item.year}</h3>
             <p>{item.fact}</p>
           </div>
@@ -77,22 +137,21 @@ export default function DashboardPage() {
 
       {/* Quote Section */}
       <div className="py-8">
-        <p className="text-xl italic font-bold text-center">
-          "{pollQuotes[Math.floor(Math.random() * pollQuotes.length)]}"
-        </p>
+        <p className="text-xl italic font-bold text-center">"{randomQuote}"</p>
       </div>
 
       {/* Image Carousel */}
       <div className="overflow-x-auto py-8">
         <div className="flex space-x-4">
           {pollImages.map((img, index) => (
-            <div key={index} className="flex-shrink-0 w-64 h-48 relative">
+            <div key={`img-${index}`} className="flex-shrink-0 w-64 h-48 relative">
               <Image
                 src={img.src}
                 alt={img.alt}
                 fill
                 className="object-cover rounded"
                 unoptimized={true}
+                priority={index < 3}
               />
             </div>
           ))}
@@ -116,13 +175,21 @@ export default function DashboardPage() {
         {polls.length === 0 ? (
           <div className="text-center py-8 space-y-4">
             <p className="text-gray-600">You haven't created any polls yet.</p>
+            <Link
+              href="/polls/create"
+              className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Create Your First Poll
+            </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {polls.map(poll => (
-              <div key={poll._id} className="scale-90 origin-left">
-                <PollCard poll={poll} />
-              </div>
+              <PollCard 
+                key={poll._id} 
+                poll={poll} 
+                className="hover:scale-[1.02] transition-transform duration-200"
+              />
             ))}
           </div>
         )}
