@@ -2,9 +2,8 @@
 
 A real-time polling platform built with Next.js, MongoDB, and Chart.js for visualizing live results.
 
-![Platform Screenshot](https://i.imgur.com/example1.png)
-![Dashboard Screenshot](https://i.imgur.com/example2.png)
-![Voting Interface](https://i.imgur.com/example3.png)
+
+<img width="1880" height="896" alt="Screenshot (664)" src="https://github.com/user-attachments/assets/d0e86504-1392-4a8e-ad3c-c15b415212cc" /> 
 
 Live Demo: [https://e-vote-poll-platform.vercel.app](https://e-vote-poll-platform-f0j2bw1q2-natan-muletas-projects.vercel.app)
 
