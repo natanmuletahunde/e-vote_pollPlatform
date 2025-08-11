@@ -21,24 +21,28 @@ export default function PollPage() {
   useEffect(() => {
     const fetchPoll = async () => {
       try {
-        const response = await fetch(`/api/polls`);
+        // Fetch specific poll directly
+        const response = await fetch(`/api/polls/${id}`);
         if (!response.ok) throw new Error('Failed to fetch poll');
         
-        const polls = await response.json();
-        const foundPoll = polls.find(p => p._id === id);
+        const poll = await response.json();
         
-        if (!foundPoll) {
+        if (!poll) {
           throw new Error('Poll not found');
         }
         
-        setPoll(foundPoll);
+        setPoll(poll);
         
         // Check if user has already voted
         if (status === 'authenticated') {
           const voteCheck = await fetch(`/api/votes?pollId=${id}`);
           if (voteCheck.ok) {
             const voteData = await voteCheck.json();
-            const userVoted = voteData.votes.some(v => v.user === session.user.id);
+            // Handle both response formats
+            const votesArray = voteData.votes || voteData;
+            const userVoted = Array.isArray(votesArray) 
+              ? votesArray.some(v => v.user._id.toString() === session.user.id)
+              : false;
             setHasVoted(userVoted);
           }
         }
@@ -74,25 +78,52 @@ export default function PollPage() {
         }),
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'Failed to submit vote');
       }
 
       setHasVoted(true);
       setError('');
+      
       // Refresh poll data
-      const pollResponse = await fetch(`/api/polls`);
-      const polls = await pollResponse.json();
-      setPoll(polls.find(p => p._id === id));
+      const pollResponse = await fetch(`/api/polls/${id}`);
+      const updatedPoll = await pollResponse.json();
+      setPoll(updatedPoll);
     } catch (err) {
       setError(err.message);
     }
   };
 
-  if (loading) return <div className="text-center py-8">Loading poll...</div>;
-  if (error) return <div className="text-center py-8 text-red-600">{error}</div>;
-  if (!poll) return <div className="text-center py-8">Poll not found</div>;
+  if (loading) return (
+    <div className="text-center py-12">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+      <p className="mt-4 text-gray-600">Loading poll data...</p>
+    </div>
+  );
+
+  if (error) return (
+    <div className="text-center py-12">
+      <div className="text-red-500 text-xl mb-4">Error</div>
+      <p className="text-gray-700 mb-4">{error}</p>
+      <button 
+        onClick={() => window.location.reload()}
+        className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
+      >
+        Try Again
+      </button>
+    </div>
+  );
+
+  if (!poll) return (
+    <div className="text-center py-12">
+      <p className="text-gray-600 mb-4">Poll not found</p>
+      <a href="/" className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark">
+        Back to Home
+      </a>
+    </div>
+  );
 
   const isCreator = session?.user?.id === poll.creator._id.toString();
 
