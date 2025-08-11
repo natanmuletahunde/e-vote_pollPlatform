@@ -5,6 +5,14 @@ A real-time polling platform built with Next.js, MongoDB, and Chart.js for visua
 
 <img width="1880" height="896" alt="Screenshot (664)" src="https://github.com/user-attachments/assets/d0e86504-1392-4a8e-ad3c-c15b415212cc" /> 
 
+<img width="1870" height="882" alt="Screenshot (663)" src="https://github.com/user-attachments/assets/7605cbb4-dcaf-43a1-b043-bd8b51dcf266" />
+
+<img width="1897" height="883" alt="Screenshot (659)" src="https://github.com/user-attachments/assets/a59191e2-e397-44db-9924-f1386901c34a" />
+
+<img width="1859" height="877" alt="Screenshot (662)" src="https://github.com/user-attachments/assets/29620a93-4bf8-4f4f-b7f8-219d443dfa4f" />
+
+
+
 Live Demo: [https://e-vote-poll-platform.vercel.app](https://e-vote-poll-platform-f0j2bw1q2-natan-muletas-projects.vercel.app)
 
 ## Features ✨
