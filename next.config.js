@@ -1,6 +1,15 @@
+/** @type {import('next').NextConfig} */
+const path = require('path');
+
 const nextConfig = {
   experimental: {
     serverActions: true,
+  },
+  images: {
+    domains: [
+      'play-lh.googleusercontent.com', // For your logo
+      'lh3.googleusercontent.com'     // For Google profile images
+    ],
   },
   webpack: (config) => {
     config.resolve.alias = {
@@ -10,3 +19,5 @@ const nextConfig = {
     return config;
   }
 };
+
+module.exports = nextConfig;

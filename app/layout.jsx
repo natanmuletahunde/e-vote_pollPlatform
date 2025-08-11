@@ -21,8 +21,9 @@ export default function RootLayout({ children }) {
       <body className="bg-[#0f172a] text-white">
         <AuthProvider>
           <div className="flex flex-col min-h-screen">
+            {/* Navbar is now a client component wrapped in AuthProvider */}
             <Navbar />
-            <main className="flex-grow pt-16 pb-14"> {/* Add padding to account for fixed header/footer */}
+            <main className="flex-grow pt-24 pb-14"> {/* Increased padding-top */}
               {children}
             </main>
             <Footer />
