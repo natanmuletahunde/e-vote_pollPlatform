@@ -8,7 +8,14 @@ const nextConfig = {
   images: {
     domains: [
       'play-lh.googleusercontent.com', // For your logo
-      'lh3.googleusercontent.com'     // For Google profile images
+      'lh3.googleusercontent.com',    // For Google profile images
+      'www.slido.com',
+      'www.surveylegend.com',
+      'www.participoll.com',
+      'connecteam.com',
+      'www.mypinio.com',
+      'www.cvent.com',
+      'blog.polling.com'
     ],
   },
   webpack: (config) => {
