@@ -31,7 +31,6 @@ export default function PollPage() {
         
         const pollData = await response.json();
         
-        // Data should already be serialized from API, but we'll double-check
         const finalPoll = {
           ...pollData,
           _id: String(pollData._id),
@@ -95,7 +94,6 @@ export default function PollPage() {
       setHasVoted(true);
       setError('');
       
-      // Refresh poll data
       const pollResponse = await fetch(`/api/polls/${id}`);
       const updatedPoll = await pollResponse.json();
       
