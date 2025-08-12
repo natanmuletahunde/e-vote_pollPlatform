@@ -36,7 +36,6 @@ export default function PollForm() {
     setError('');
 
     try {
-      // Validate inputs
       if (!question.trim()) {
         throw new Error('Question is required');
       }
