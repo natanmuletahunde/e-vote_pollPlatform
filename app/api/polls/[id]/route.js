@@ -18,30 +18,26 @@ const serializePoll = (poll) => {
     } : { _id: null, name: 'Unknown' },
     options: poll.options?.map(option => ({
       ...option._doc,
-      _id: option._id?.toString()
+      _id: option._id?.toString(),
+      votes: option.votes || 0
     })) || [],
     createdAt: poll.createdAt?.toISOString(),
     updatedAt: poll.updatedAt?.toISOString(),
     closesAt: poll.closesAt?.toISOString(),
-    isOpen: poll.isOpen ?? true
+    isOpen: poll.isOpen ?? true,
+    totalVotes: poll.totalVotes || 0
   };
 };
 
-// Helper function to validate ObjectId
-const isValidObjectId = (id) => {
-  return mongoose.Types.ObjectId.isValid(id);
-};
-
-// GET single poll
 export async function GET(request, { params }) {
   await dbConnect();
   
   try {
     const { id } = params;
     
-    if (!isValidObjectId(id)) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
-        { error: 'Invalid poll ID format' },
+        { success: false, error: 'Invalid poll ID format' },
         { status: 400 }
       );
     }
@@ -52,27 +48,33 @@ export async function GET(request, { params }) {
 
     if (!poll) {
       return NextResponse.json(
-        { error: 'Poll not found' }, 
+        { success: false, error: 'Poll not found' }, 
         { status: 404 }
       );
     }
     
-    return NextResponse.json(serializePoll(poll));
+    return NextResponse.json({
+      success: true,
+      poll: serializePoll(poll)
+    });
   } catch (error) {
     console.error('Error fetching poll:', error);
     return NextResponse.json(
-      { error: 'Internal server error' }, 
+      { 
+        success: false,
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      }, 
       { status: 500 }
     );
   }
 }
 
-// UPDATE poll
 export async function PUT(request, { params }) {
   const session = await getServerSession(authOptions);
-  if (!session) {
+  if (!session?.user?.id) {
     return NextResponse.json(
-      { error: 'Unauthorized' }, 
+      { success: false, error: 'Unauthorized' }, 
       { status: 401 }
     );
   }
@@ -82,9 +84,9 @@ export async function PUT(request, { params }) {
   try {
     const { id } = params;
     
-    if (!isValidObjectId(id)) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
-        { error: 'Invalid poll ID format' },
+        { success: false, error: 'Invalid poll ID format' },
         { status: 400 }
       );
     }
@@ -92,14 +94,14 @@ export async function PUT(request, { params }) {
     const poll = await Poll.findById(id);
     if (!poll) {
       return NextResponse.json(
-        { error: 'Poll not found' }, 
+        { success: false, error: 'Poll not found' }, 
         { status: 404 }
       );
     }
 
     if (poll.creator.toString() !== session.user.id) {
       return NextResponse.json(
-        { error: 'Unauthorized to update this poll' }, 
+        { success: false, error: 'Unauthorized to update this poll' }, 
         { status: 403 }
       );
     }
@@ -111,28 +113,36 @@ export async function PUT(request, { params }) {
       poll.options = options
         .filter(opt => typeof opt.text === 'string' && opt.text.trim())
         .slice(0, 10)
-        .map(opt => ({ text: opt.text.trim() }));
+        .map(opt => ({ 
+          text: opt.text.trim(),
+          votes: opt.votes || 0
+        }));
     }
     if (closesAt) poll.closesAt = new Date(closesAt);
     if (typeof isOpen === 'boolean') poll.isOpen = isOpen;
 
     const updatedPoll = await poll.save();
-    return NextResponse.json(serializePoll(updatedPoll));
+    return NextResponse.json({
+      success: true,
+      poll: serializePoll(updatedPoll)
+    });
   } catch (error) {
     console.error('Poll update error:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' }, 
+      { 
+        success: false,
+        error: error.message || 'Internal server error' 
+      }, 
       { status: 500 }
     );
   }
 }
 
-// DELETE poll
 export async function DELETE(request, { params }) {
   const session = await getServerSession(authOptions);
-  if (!session) {
+  if (!session?.user?.id) {
     return NextResponse.json(
-      { error: 'Unauthorized' }, 
+      { success: false, error: 'Unauthorized' }, 
       { status: 401 }
     );
   }
@@ -142,9 +152,9 @@ export async function DELETE(request, { params }) {
   try {
     const { id } = params;
     
-    if (!isValidObjectId(id)) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
-        { error: 'Invalid poll ID format' },
+        { success: false, error: 'Invalid poll ID format' },
         { status: 400 }
       );
     }
@@ -152,14 +162,14 @@ export async function DELETE(request, { params }) {
     const poll = await Poll.findById(id);
     if (!poll) {
       return NextResponse.json(
-        { error: 'Poll not found' }, 
+        { success: false, error: 'Poll not found' }, 
         { status: 404 }
       );
     }
 
     if (poll.creator.toString() !== session.user.id) {
       return NextResponse.json(
-        { error: 'Unauthorized to delete this poll' }, 
+        { success: false, error: 'Unauthorized to delete this poll' }, 
         { status: 403 }
       );
     }
@@ -172,7 +182,10 @@ export async function DELETE(request, { params }) {
   } catch (error) {
     console.error('Poll deletion error:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' }, 
+      { 
+        success: false,
+        error: error.message || 'Internal server error' 
+      }, 
       { status: 500 }
     );
   }

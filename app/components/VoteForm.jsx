@@ -1,10 +1,12 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 
 export default function VoteForm({ pollId, options, onVoteSuccess }) {
   const [selectedOption, setSelectedOption] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const router = useRouter();
 
   const handleVote = async (e) => {
     e.preventDefault();
@@ -27,6 +29,12 @@ export default function VoteForm({ pollId, options, onVoteSuccess }) {
           option: selectedOption,
         }),
       });
+      
+      if (response.status === 401) {
+        // Handle unauthorized (not logged in)
+        router.push('/login?returnTo=' + window.location.pathname);
+        return;
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -44,7 +52,7 @@ export default function VoteForm({ pollId, options, onVoteSuccess }) {
   return (
     <div className="max-w-3xl mx-auto">
       <form onSubmit={handleVote} className="space-y-4">
-        <div className="space-y-2">
+        <div className="space-y-3">
           {options.map((option, index) => (
             <div key={index} className="flex items-center">
               <input
@@ -58,7 +66,7 @@ export default function VoteForm({ pollId, options, onVoteSuccess }) {
               />
               <label
                 htmlFor={`option-${index}`}
-                className="ml-3 block text-sm font-medium text-gray-700"
+                className="ml-3 block text-base font-semibold text-black"
               >
                 {option.text}
               </label>

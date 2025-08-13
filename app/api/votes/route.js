@@ -20,7 +20,6 @@ export async function POST(request) {
   try {
     const { pollId, option, demographicData } = await request.json();
     
-    // Validate input
     if (!pollId || !mongoose.Types.ObjectId.isValid(pollId)) {
       return NextResponse.json(
         { success: false, error: 'Invalid poll ID' },
@@ -50,7 +49,6 @@ export async function POST(request) {
       );
     }
     
-    // Validate option index
     if (option < 0 || option >= poll.options.length) {
       return NextResponse.json(
         { success: false, error: 'Invalid option selected' },
@@ -58,7 +56,6 @@ export async function POST(request) {
       );
     }
     
-    // Check for existing vote
     const existingVote = await Vote.findOne({ 
       poll: pollId, 
       user: session.user.id 
@@ -71,7 +68,6 @@ export async function POST(request) {
       );
     }
     
-    // Create new vote
     const vote = new Vote({
       poll: pollId,
       user: session.user.id,
@@ -80,11 +76,9 @@ export async function POST(request) {
       votedAt: new Date()
     });
     
-    // Update poll vote count
     poll.options[option].votes += 1;
     poll.totalVotes = (poll.totalVotes || 0) + 1;
     
-    // Save both in transaction
     await Promise.all([vote.save(), poll.save()]);
     
     return NextResponse.json(
@@ -104,7 +98,8 @@ export async function POST(request) {
     return NextResponse.json(
       { 
         success: false, 
-        error: error.message || 'Internal server error' 
+        error: error.message || 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }
     );
@@ -118,7 +113,6 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const pollId = searchParams.get('pollId');
     
-    // Validate pollId
     if (!pollId || !mongoose.Types.ObjectId.isValid(pollId)) {
       return NextResponse.json(
         { success: false, error: 'Invalid poll ID' },
@@ -126,7 +120,6 @@ export async function GET(request) {
       );
     }
     
-    // Check if poll exists
     const poll = await Poll.findById(pollId).lean();
     if (!poll) {
       return NextResponse.json(
@@ -135,24 +128,20 @@ export async function GET(request) {
       );
     }
     
-    // Get votes with user info
     const votes = await Vote.find({ poll: pollId })
       .populate('user', 'name email')
       .lean();
     
-    // Calculate statistics
     const optionStats = poll.options.map((opt, index) => ({
       text: opt.text,
-      votes: opt.votes,
+      votes: opt.votes || 0,
       percentage: poll.totalVotes > 0 ? Math.round((opt.votes / poll.totalVotes) * 100) : 0
     }));
     
-    // Calculate demographics if available
     let demographics = null;
     const votesWithDemographics = votes.filter(v => v.demographicData);
     
     if (votesWithDemographics.length > 0) {
-      // Age statistics
       const totalAge = votesWithDemographics.reduce((sum, v) => sum + (v.demographicData?.age || 0), 0);
       const ageDistribution = votesWithDemographics.reduce((acc, v) => {
         if (v.demographicData?.age) {
@@ -162,7 +151,6 @@ export async function GET(request) {
         return acc;
       }, {});
 
-      // Gender statistics
       const genderDistribution = votesWithDemographics.reduce((acc, v) => {
         if (v.demographicData?.gender) {
           const gender = v.demographicData.gender.toLowerCase();
@@ -171,7 +159,6 @@ export async function GET(request) {
         return acc;
       }, {});
 
-      // Location statistics
       const locationDistribution = votesWithDemographics.reduce((acc, v) => {
         if (v.demographicData?.location) {
           const location = v.demographicData.location;
@@ -198,9 +185,9 @@ export async function GET(request) {
       poll: {
         ...poll,
         _id: poll._id.toString(),
-        options: optionStats
+        options: optionStats,
+        totalVotes: poll.totalVotes || 0
       },
-      totalVotes: poll.totalVotes || 0,
       demographics,
       votes: votes.map(vote => ({
         ...vote,
@@ -215,7 +202,11 @@ export async function GET(request) {
   } catch (error) {
     console.error('Votes fetch error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { 
+        success: false, 
+        error: error.message || 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     );
   }
